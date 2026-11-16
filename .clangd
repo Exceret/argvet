@@ -1,0 +1,13 @@
+CompileFlags:
+  Add:
+    - -I/opt/R/4.6.2/lib/R/include
+    - -I/data/home/yyx/R/x86_64-pc-linux-gnu-library/4.6/Rcpp/include
+    - -I/data/home/yyx/R/x86_64-pc-linux-gnu-library/4.6/RcppEigen/include
+    - -I/data/home/yyx/R/x86_64-pc-linux-gnu-library/4.6/RcppArmadillo/include
+Diagnostics:
+  UnusedIncludes: Ignore
+Index:
+  Background: Build
+---
+If:
+  PathMatch: R/.*
