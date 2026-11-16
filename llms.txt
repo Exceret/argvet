@@ -1,0 +1,241 @@
+# argvet
+
+**argvet** lets you write an argument-checking block once and reuse it
+in as many functions as you like. The block runs in the *calling
+function’s* frame, so it sees the arguments exactly as the function
+received them, and anything it normalises (trimming, coercing,
+defaulting) comes back as a named list.
+
+## Installation
+
+You can install the development version of argvet from
+[GitHub](https://github.com/) with:
+
+``` r
+
+# install.packages("pak")
+pak::pak("Exceret/argvet")
+```
+
+A standalone [R
+script](https://github.com/WangLabCSU/rpkgkit/blob/main/R/standalone-make_arg_validator.R)
+can be retrieved with `usethis::use_standalone()`, inplemented in pure R
+but a little bit slower and cannot handle dots:
+
+``` r
+
+usethis::use_standalone("WangLabCSU/rpkgkit","make_arg_validator")
+```
+
+## Example
+
+With `argvet`, you can create a validator function and reuse it in
+multiple functions. Here, we define a function needs a string `name` and
+an integer `threads`:
+
+``` r
+
+library(argvet)
+
+fit <- function(name, threads = 2) {
+  # checks
+  rlang::check_string(name)
+  rlang::check_number_decimal(threads, lower = 1, upper = 64)
+  if (!is.integer(threads)) {
+    rlang::abort("`threads` must be an integer.")
+  }
+
+  # actual work
+  message("Fitting model ", name, " with ", threads, " threads.")
+}
+fit("my_model", threads = 4L)
+#> Fitting model my_model with 4 threads.
+```
+
+Usually if we want to reuse the same checks in multiple functions, a new
+function is needed. As the number of checks grows, the arguments passing
+between functions becomes tedious:
+
+``` r
+
+check_fit <- function(
+  name,
+  threads,
+  arg_1,
+  arg_2,
+  arg_3,
+  arg_4,
+  ...
+) {
+  # checks
+  rlang::check_dots_empty()
+  rlang::check_string(name)
+  rlang::check_number_decimal(arg_1)
+  rlang::check_number_decimal(arg_2)
+  rlang::check_number_decimal(arg_3)
+  rlang::check_number_decimal(arg_4)
+  rlang::check_number_decimal(threads, lower = 1, upper = 64)
+  if (!is.integer(threads)) {
+    rlang::abort("`threads` must be an integer.")
+  }
+}
+
+fit_v2 <- function(
+  name,
+  threads = 2,
+  arg_1,
+  arg_2,
+  arg_3,
+  arg_4,
+  ...
+) {
+  check_fit(name, threads, arg_1, arg_2, arg_3, arg_4, ...)
+  # actual work
+  message("Fitting model ", name, " with ", threads, " threads.")
+}
+fit_v2("my_model", threads = 4L, arg_1 = 1, arg_2 = 2, arg_3 = 3, arg_4 = 4)
+#> Fitting model my_model with 4 threads.
+```
+
+With `argvet`, it is much easier to maintain:
+
+``` r
+
+check_fit <- make_arg_validator({
+  # checks
+  rlang::check_dots_empty()
+  rlang::check_string(name)
+  rlang::check_number_decimal(arg_1)
+  rlang::check_number_decimal(arg_2)
+  rlang::check_number_decimal(arg_3)
+  rlang::check_number_decimal(arg_4)
+  rlang::check_number_decimal(threads, lower = 1, upper = 64)
+  if (!is.integer(threads)) {
+    rlang::abort("`threads` must be an integer.")
+  }
+})
+
+fit_v2 <- function(
+  name,
+  threads = 2,
+  arg_1,
+  arg_2,
+  arg_3,
+  arg_4,
+  ...
+) {
+  check_fit()
+  # actual work
+  message("Fitting model ", name, " with ", threads, " threads.")
+}
+fit_v2("my_model", threads = 4L, arg_1 = 1, arg_2 = 2, arg_3 = 3, arg_4 = 4)
+#> Fitting model my_model with 4 threads.
+```
+
+``` r
+
+# This will fail because there is an extra argument.
+fit_v2(
+  "my_model",
+  threads = 4L,
+  arg_1 = 1,
+  arg_2 = 2,
+  arg_3 = 3,
+  arg_4 = 4,
+  extra_arg = 5
+) |>
+  try()
+#> Error : `...` must be empty.
+#> ✖ Problematic argument:
+#> • extra_arg = 5
+```
+
+This container can be used in any other function as long as it has the
+same arguments. No arguments need to be passed to the validator
+function.
+
+**Note**: A limitation of `argvet` is that
+``` rlang::last_error()``rlang::last_trace() ``` can’t be used in
+`argvet` because it is not in the calling frame.
+
+------------------------------------------------------------------------
+
+**Other packages helps checking is compatible with `argvet`.**
+
+Here are some examples using
+[chk](https://github.com/poissonconsulting/chk) and
+[checkmate](https://github.com/mllg/checkmate)
+
+``` r
+
+check_fit <- make_arg_validator({
+  # checks
+  chk::chk_integer(threads)
+  chk::chk_string(name)
+  checkmate::assert(
+    checkmate::checkCount(arg_1),
+    checkmate::checkCount(arg_2),
+    checkmate::checkCount(arg_3),
+    checkmate::checkCount(arg_4),
+    combine = "and"
+  )
+})
+
+
+fit_v2("my_model", threads = 4L, arg_1 = 1, arg_2 = 2, arg_3 = 3, arg_4 = 4)
+#> Fitting model my_model with 4 threads.
+```
+
+``` r
+
+fit_v2(
+  "my_model",
+  threads = 4,
+  arg_1 = 1,
+  arg_2 = 2,
+  arg_3 = 3,
+  arg_4 = 4
+) |>
+  try()
+#> Error : `threads` must be integer.
+
+fit_v2(
+  "my_model",
+  threads = 4L,
+  arg_1 = 1.2, # Here is a decimal number
+  arg_2 = 2,
+  arg_3 = 3,
+  arg_4 = 4
+) |>
+  try()
+#> Error : Assertion on 'arg_1' failed: Must be of type 'count', not 'double'.
+```
+
+## Deps
+
+``` r
+
+pak::local_deps_tree()
+# local::. 0.0.1 [new][bld]                                                 
+# └─rlang 1.3.0 [new][bld][cmp]
+
+# Key:  [new] new | [bld] build | [cmp] compile
+```
+
+## License
+
+Apache-2.0 © [Exceret](https://github.com/Exceret)
+
+# Package index
+
+## All functions
+
+- [`make_arg_validator()`](https://exceret.github.io/argvet/reference/make_arg_validator.md)
+  : Create a Function that Validates and Transforms Caller Arguments
+
+# Articles
+
+### All vignettes
+
+- [Performance
+  Benchmark](https://exceret.github.io/argvet/articles/benchmark.md):
