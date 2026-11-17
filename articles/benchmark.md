@@ -61,10 +61,10 @@ stats <- microbenchmark(
 )
 print(stats)
 #> Unit: nanoseconds
-#>             expr  min     lq    mean median     uq   max neval
-#>  argvet_included 2814 3060.0 3398.67   3210 3405.5 10826   100
-#>  argvet_excluded 2424 2628.5 3265.76   2794 3034.5 44957   100
-#>     direct_check  651  751.0  885.55    781  916.5  5178   100
+#>             expr  min   lq    mean median     uq   max neval
+#>  argvet_included 2197 2284 2517.15 2344.5 2470.0 12738   100
+#>  argvet_excluded 1841 1950 2238.91 1994.0 2092.5 21480   100
+#>     direct_check  594  648  722.11  686.5  720.5  2796   100
 ```
 
 ``` r
@@ -361,12 +361,12 @@ mb_overhead <- microbenchmark(
 )
 print(mb_overhead)
 #> Unit: microseconds
-#>                      expr    min      lq       mean  median      uq       max
-#>                  no_check  2.073  2.5740   3.096705  2.8440  3.5850    11.777
-#>               base_inline  6.970  7.6920 117.635595  8.3025  9.2235 21763.570
-#>            base_container 17.086 17.9915  19.729735 18.7380 20.7460    56.494
-#>       base_container_used 17.717 18.4270  19.989935 19.0880 21.4070    41.111
-#>  base_container_writeback 18.498 19.5195  21.249710 20.4010 22.3785    62.543
+#>                      expr    min      lq     mean  median      uq       max
+#>                  no_check  1.858  2.3450  2.75085  2.6235  3.0365     4.873
+#>               base_inline  5.373  5.9805 98.91416  6.3840  7.1650 18410.849
+#>            base_container 14.348 15.0675 16.42266 15.5920 17.0585    45.900
+#>       base_container_used 14.627 15.3120 16.52408 15.8310 17.2175    29.116
+#>  base_container_writeback 15.320 16.1155 17.74059 16.8715 18.3030    41.902
 #>  neval
 #>    200
 #>    200
@@ -410,13 +410,13 @@ cat(sprintf(
   m[["base_inline"]],
   m[["base_container"]]
 ))
-#> no checks: 2.84 us | inline: 8.30 us | container: 18.74 us
+#> no checks: 2.62 us | inline: 6.38 us | container: 15.59 us
 cat(sprintf(
   "container - inline = %+.2f us (%+.1f%% of the inline median)\n",
   delta,
   100 * delta / m[["base_inline"]]
 ))
-#> container - inline = +10.44 us (+125.7% of the inline median)
+#> container - inline = +9.21 us (+144.2% of the inline median)
 p <- wilcox.test(
   mb_overhead$time[mb_overhead$expr == "base_container"],
   mb_overhead$time[mb_overhead$expr == "base_inline"]
@@ -448,10 +448,10 @@ mb_chk <- microbenchmark(
 print(mb_chk)
 #> Unit: microseconds
 #>                     expr    min      lq      mean  median      uq      max
-#>              base_inline  6.950  7.5015  8.058305  7.7465  7.9715   44.556
-#>               chk_inline 32.408 33.3400 58.963175 33.7255 34.3665 4980.495
-#>            chk_container 38.277 39.8140 41.403825 40.3800 40.9510   72.308
-#>  chk_container_writeback 39.990 41.1010 59.630495 41.6670 42.4030 3431.582
+#>              base_inline  5.447  5.8085  6.281685  6.0305  6.2510   26.896
+#>               chk_inline 25.448 26.6175 48.746850 27.1880 27.8305 4234.975
+#>            chk_container 30.648 31.5205 33.256570 32.0940 32.8490   69.394
+#>  chk_container_writeback 31.532 32.5095 46.986255 33.1450 33.8390 2629.931
 #>  neval
 #>    200
 #>    200
@@ -498,18 +498,12 @@ mb_checkmate <- microbenchmark(
 )
 print(mb_checkmate)
 #> Unit: microseconds
-#>                 expr     min       lq       mean   median       uq      max
-#>          base_inline   7.231   8.0670   9.030265   8.6230   9.2740   20.170
-#>     checkmate_inline  65.788  70.7800 115.304845  72.9685  77.2245 4410.528
-#>     checkmate_assert 104.235 110.3790 191.552475 113.2280 118.2210 7946.505
-#>    checkmate_qassert  27.571  29.5590  50.998645  30.6710  31.9225 3936.873
-#>  checkmate_container  72.047  76.5135  81.617240  79.1230  83.0090  125.086
-#>  neval
-#>    200
-#>    200
-#>    200
-#>    200
-#>    200
+#>                 expr    min      lq       mean median      uq      max neval
+#>          base_inline  5.384  6.3115   7.060385  6.773  7.4450   21.345   200
+#>     checkmate_inline 51.331 56.4755  92.691955 58.049 61.5980 3849.673   200
+#>     checkmate_assert 81.971 86.0970 153.253520 88.618 93.7825 6616.647   200
+#>    checkmate_qassert 21.652 23.0915  41.835830 23.721 24.9595 3422.846   200
+#>  checkmate_container 57.513 61.3310  65.764005 63.136 66.3440  101.232   200
 ggplot2::autoplot(mb_checkmate)
 ```
 
@@ -555,14 +549,14 @@ mb_engines <- microbenchmark(
 print(mb_engines)
 #> Unit: microseconds
 #>                 expr    min      lq      mean  median      uq      max neval
-#>          base_inline  6.790  7.6665  8.365065  8.0120  8.4575   20.400   200
-#>       base_container 17.356 18.3980 19.989780 19.0535 19.9395  104.716   200
-#>           chk_inline 31.857 33.6800 35.978690 34.5015 36.3695   62.393   200
-#>        chk_container 38.677 40.5555 43.094790 41.6620 43.3090  100.239   200
-#>     checkmate_inline 65.327 67.1200 85.151680 68.5320 71.3710 2842.807   200
-#>  checkmate_container 70.505 72.9385 77.300125 74.2005 76.7695  147.038   200
-#>         mixed_inline 28.672 30.2850 51.793835 31.0210 32.2580 3933.549   200
-#>      mixed_container 34.441 35.9835 37.593145 36.7350 37.6310   50.074   200
+#>          base_inline  5.573  6.2290  7.118385  6.5900  7.1915   17.698   200
+#>       base_container 14.712 15.4985 17.271030 15.9145 16.9130   66.664   200
+#>           chk_inline 25.790 27.1255 30.087215 27.9080 30.8275   77.437   200
+#>        chk_container 31.068 32.4810 36.320485 33.2580 36.9100   77.640   200
+#>     checkmate_inline 52.153 54.8340 69.616265 56.3390 60.8485 1908.209   200
+#>  checkmate_container 57.874 59.6085 66.049750 60.9740 68.9140  114.309   200
+#>         mixed_inline 23.358 24.6295 43.678520 25.3465 26.7890 3322.490   200
+#>      mixed_container 28.089 29.5585 32.287995 30.2015 32.7710   62.878   200
 ggplot2::autoplot(mb_engines)
 ```
 
@@ -586,10 +580,10 @@ print(
   row.names = FALSE
 )
 #>     engine inline_us container_us delta_us delta_pct
-#>       base      8.01        19.05    11.04     137.8
-#>        chk     34.50        41.66     7.16      20.8
-#>  checkmate     68.53        74.20     5.67       8.3
-#>      mixed     31.02        36.74     5.71      18.4
+#>       base      6.59        15.91     9.32     141.5
+#>        chk     27.91        33.26     5.35      19.2
+#>  checkmate     56.34        60.97     4.64       8.2
+#>      mixed     25.35        30.20     4.86      19.2
 ```
 
 Two patterns appear in the last plot. The **engine** sets the vertical
